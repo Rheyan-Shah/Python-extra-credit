@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Large media files (shared via Google Drive, not committed)
+*.wav
+*.mp3

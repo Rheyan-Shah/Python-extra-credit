@@ -107,6 +107,18 @@
     color: var(--fg);
     border-color: var(--fg);
   }
+  .gp-status {
+    display: flex;
+    gap: 28px;
+    margin-top: 4px;
+    font-size: clamp(10px, 1.4vw, 12px);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .gp-row b { color: var(--dim); font-weight: 500; }
+  .gp-row span { transition: color 0.15s ease; }
+  .gp-row span.active { color: var(--fg); }
   @keyframes pulse {
     0%, 100% { opacity: 0.35; }
     50% { opacity: 1; }
@@ -137,14 +149,19 @@
   <div id="startOverlay" class="overlay visible">
     <h1 class="title">PONG</h1>
     <div class="subtitle">
-      <b>W / S</b> or <b>Mouse</b> &mdash; move left paddle<br>
-      <b>&uarr; / &darr;</b> &mdash; move right paddle (2P mode)
+      <b>W / S</b>, <b>Mouse</b> or <b>Gamepad</b> &mdash; left paddle<br>
+      <b>&uarr; / &darr;</b> or <b>Gamepad</b> &mdash; right paddle (2P mode)
     </div>
     <div class="mode-row">
       <button class="mode-btn active" data-mode="ai">1 Player</button>
       <button class="mode-btn" data-mode="2p">2 Player</button>
     </div>
+    <div class="gp-status">
+      <div class="gp-row"><b>P1</b> <span id="gpLabelLeft">Keyboard / Mouse</span></div>
+      <div class="gp-row"><b>P2</b> <span id="gpLabelRight">AI</span></div>
+    </div>
     <div class="hint">Press Space or Tap to Start</div>
+    <div class="hint" style="animation: none; opacity: 0.5; margin-top: -8px; font-size: 10px;">Press a button on your controller to activate it</div>
   </div>
 
   <div id="pauseOverlay" class="overlay hidden">
@@ -202,6 +219,71 @@
   const keys = Object.create(null);
   let mouseTargetY = null;
   let touchLeftY = null, touchRightY = null;
+
+  // ---------- Gamepad support (both paddles) ----------
+  const GP_DEADZONE = 0.15;
+  const gpLabelLeft = document.getElementById("gpLabelLeft");
+  const gpLabelRight = document.getElementById("gpLabelRight");
+  const gamepads = { left: null, right: null }; // gamepad.index assigned to each paddle
+
+  function assignGamepad(index) {
+    if (gamepads.left === null && gamepads.right !== index) {
+      gamepads.left = index;
+    } else if (gamepads.right === null && gamepads.left !== index) {
+      gamepads.right = index;
+    } else {
+      return;
+    }
+    updateGamepadUI();
+  }
+  function unassignGamepad(index) {
+    let changed = false;
+    if (gamepads.left === index) { gamepads.left = null; changed = true; }
+    if (gamepads.right === index) { gamepads.right = null; changed = true; }
+    if (changed) updateGamepadUI();
+  }
+  function setGpRow(labelEl, index, fallbackText) {
+    if (index !== null) {
+      labelEl.textContent = "Gamepad Connected";
+      labelEl.classList.add("active");
+    } else {
+      labelEl.textContent = fallbackText;
+      labelEl.classList.remove("active");
+    }
+  }
+  function updateGamepadUI() {
+    setGpRow(gpLabelLeft, gamepads.left, "Keyboard / Mouse");
+    if (mode === "ai") {
+      gpLabelRight.textContent = "AI";
+      gpLabelRight.classList.remove("active");
+    } else {
+      setGpRow(gpLabelRight, gamepads.right, "Keyboard");
+    }
+  }
+  function scanGamepads() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (gamepads.left !== null && !(pads[gamepads.left] && pads[gamepads.left].connected)) unassignGamepad(gamepads.left);
+    if (gamepads.right !== null && !(pads[gamepads.right] && pads[gamepads.right].connected)) unassignGamepad(gamepads.right);
+    for (let i = 0; i < pads.length; i++) {
+      const gp = pads[i];
+      if (gp && gp.connected && gamepads.left !== i && gamepads.right !== i) {
+        assignGamepad(i);
+      }
+    }
+  }
+  function gamepadAxisValue(index) {
+    if (index === null) return null;
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = pads[index];
+    if (!gp || !gp.connected) return null;
+    let v = gp.axes[1] || 0; // left stick vertical
+    if (Math.abs(v) < GP_DEADZONE) v = 0;
+    if (gp.buttons[12] && gp.buttons[12].pressed) v = -1; // dpad up
+    if (gp.buttons[13] && gp.buttons[13].pressed) v = 1;  // dpad down
+    return v;
+  }
+  window.addEventListener("gamepadconnected", (e) => assignGamepad(e.gamepad.index));
+  window.addEventListener("gamepaddisconnected", (e) => unassignGamepad(e.gamepad.index));
 
   // subtle particle trail for the ball (minimal, few points)
   const trail = [];
@@ -331,6 +413,7 @@
       document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       mode = btn.dataset.mode;
+      updateGamepadUI();
     });
   });
 
@@ -360,6 +443,12 @@
   }
 
   function updatePlayerLeft(dt) {
+    const gpVal = gamepadAxisValue(gamepads.left);
+    if (gpVal) {
+      movePaddle(left, gpVal * PADDLE_SPEED, dt);
+      return;
+    }
+
     let vy = 0;
     if (keys.KeyW) vy -= PADDLE_SPEED;
     if (keys.KeyS) vy += PADDLE_SPEED;
@@ -378,6 +467,12 @@
   }
 
   function updatePlayerRight2P(dt) {
+    const gpVal = gamepadAxisValue(gamepads.right);
+    if (gpVal) {
+      movePaddle(right, gpVal * PADDLE_SPEED, dt);
+      return;
+    }
+
     let vy = 0;
     if (keys.ArrowUp) vy -= PADDLE_SPEED;
     if (keys.ArrowDown) vy += PADDLE_SPEED;
@@ -557,6 +652,8 @@
     lastTime = now;
     dt = Math.min(dt, 0.05); // clamp to avoid spiral on tab-switch/stalls
 
+    scanGamepads();
+
     if (dt > 0) {
       const instFps = 1 / dt;
       fpsSmooth += (instFps - fpsSmooth) * 0.1;
@@ -585,6 +682,7 @@
     right.y = H / 2 - right.h / 2;
     resetBall();
     setState(State.START);
+    updateGamepadUI();
     requestAnimationFrame((t) => { lastTime = t; requestAnimationFrame(frame); });
   }
 

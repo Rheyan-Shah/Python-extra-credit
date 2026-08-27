@@ -285,10 +285,6 @@
   window.addEventListener("gamepadconnected", (e) => assignGamepad(e.gamepad.index));
   window.addEventListener("gamepaddisconnected", (e) => unassignGamepad(e.gamepad.index));
 
-  // subtle particle trail for the ball (minimal, few points)
-  const trail = [];
-  const TRAIL_MAX = 10;
-
   // hit flash
   let flash = 0;
 
@@ -357,7 +353,6 @@
     const dir = direction || (Math.random() < 0.5 ? -1 : 1);
     ball.vx = Math.cos(angle) * ball.speed * dir;
     ball.vy = Math.sin(angle) * ball.speed;
-    trail.length = 0;
   }
 
   function resetMatch() {
@@ -498,9 +493,6 @@
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
 
-    trail.push({ x: ball.x, y: ball.y });
-    if (trail.length > TRAIL_MAX) trail.shift();
-
     // top/bottom walls
     if (ball.y - ball.r < 0) {
       ball.y = ball.r;
@@ -600,46 +592,14 @@
     drawPaddle(left);
     drawPaddle(right);
 
-    // ball trail
-    for (let i = 0; i < trail.length; i++) {
-      const t = trail[i];
-      const a = (i / trail.length) * 0.25;
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(255,255,255,${a})`;
-      ctx.arc(t.x, t.y, ball.r * (0.4 + (i / trail.length) * 0.6), 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ball
-    ctx.save();
-    ctx.shadowColor = "rgba(255,255,255,0.6)";
-    ctx.shadowBlur = ball.r * 2.2;
-    ctx.beginPath();
+    // ball (sharp square, no glow)
     ctx.fillStyle = "#ffffff";
-    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    ctx.fillRect(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
   }
 
   function drawPaddle(p) {
-    const r = Math.min(p.w, 10);
-    ctx.save();
-    ctx.shadowColor = "rgba(255,255,255,0.25)";
-    ctx.shadowBlur = 12;
     ctx.fillStyle = "#f2f2f2";
-    roundRect(ctx, p.x, p.y, p.w, p.h, r);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function roundRect(c, x, y, w, h, r) {
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
+    ctx.fillRect(p.x, p.y, p.w, p.h);
   }
 
   // ---------- Main loop (delta-time, refresh-rate independent) ----------

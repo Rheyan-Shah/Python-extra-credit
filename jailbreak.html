@@ -1,63 +1,241 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Jailbreak</title>
+<title>Jailbreak: Stickman Escape</title>
 <style>
-  body{margin:0;background:#111;color:#eee;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
-  h1{margin:16px 0 4px;letter-spacing:4px}
-  #stage{position:relative;width:min(92vw,560px);height:150px;margin:8px 0;border:3px solid #444;border-radius:8px;overflow:hidden;
-    background:repeating-linear-gradient(90deg,#222 0 18px,#333 18px 22px)}
-  #stage.escaped{background:linear-gradient(#58c,#8d6)}
-  #guard{position:absolute;bottom:10px;font-size:40px;animation:patrol 4s linear infinite alternate}
-  #guard.hard{animation-duration:1.8s}
-  #me{position:absolute;bottom:10px;left:10px;font-size:48px;transition:left .8s ease}
-  #me.shake{animation:shake .5s}
-  #me.jump{animation:jump .6s}
-  #bars{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 40px,#777 40px 46px);opacity:.6;transition:opacity .8s}
-  #stage.escaped #bars{opacity:0}
-  @keyframes patrol{from{left:55%}to{left:85%}}
-  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px) rotate(-10deg)}40%{transform:translateX(14px) rotate(10deg)}60%{transform:translateX(-10px)}80%{transform:translateX(10px)}}
-  @keyframes jump{50%{transform:translateY(-50px) scale(1.2)}}
-  #text{width:min(92vw,560px);min-height:70px;font-size:18px;animation:fade .5s}
-  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
-  #choices,#modes{display:flex;flex-wrap:wrap;gap:10px;width:min(92vw,560px)}
-  button{flex:1 1 45%;padding:12px;font-size:16px;border:0;border-radius:6px;background:#e94;color:#111;cursor:pointer;transition:transform .15s}
-  button:hover{transform:scale(1.05)}
-  #inv{margin:10px;color:#9cf;min-height:24px}
+:root{--o:#ff8a1f;--b:#3a86ff;--red:#ff2d55}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b14;color:#f2f2f7;font-family:"Comic Sans MS","Chalkboard SE",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:8px}
+h1{margin:6px 0;font-size:clamp(22px,5vw,38px);letter-spacing:3px;text-shadow:3px 3px 0 var(--red);transform:rotate(-1.5deg)}
+h1 small{display:block;font-size:.4em;letter-spacing:6px;color:#9aa;text-shadow:none}
+#hud{width:min(96vw,720px);display:flex;justify-content:space-between;font-size:15px;padding:4px 8px;color:#9cf;min-height:28px}
+#world{position:relative;width:min(96vw,720px);aspect-ratio:2/1;border:4px solid #fff;border-radius:10px;overflow:hidden;background:#000;box-shadow:6px 6px 0 var(--red)}
+#world.shakeall{animation:shakeall .5s}
+#bg{position:absolute;inset:0;width:100%;height:100%}
+.pawn{position:absolute;bottom:7%;width:9%;transition:left 1s ease-in-out}
+.pawn svg{width:100%;display:block;overflow:visible}
+#guard{animation:patrol 5s ease-in-out infinite alternate;transition:none}
+#guard.hard{animation-duration:2s}
+@keyframes patrol{from{left:62%}to{left:86%}}
+#bubble{position:absolute;bottom:105%;left:-30%;background:#fff;color:#111;padding:3px 8px;border-radius:10px;font-size:clamp(9px,1.7vw,13px);white-space:nowrap;border:2px solid #111}
+.limb{stroke-linecap:round;transform-box:fill-box;transform-origin:50% 0}
+.body-idle{animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-2px)}}
+.walk .legL{animation:swL .35s linear infinite}.walk .legR{animation:swR .35s linear infinite}
+.walk .armL{animation:swR .35s linear infinite}.walk .armR{animation:swL .35s linear infinite}
+@keyframes swL{0%,100%{transform:rotate(30deg)}50%{transform:rotate(-30deg)}}
+@keyframes swR{0%,100%{transform:rotate(-30deg)}50%{transform:rotate(30deg)}}
+.fx-jump{animation:jump .7s}.fx-spin{animation:spin 1s}.fx-shake{animation:shake .6s}.fx-fall{animation:fall 1.2s forwards}
+.fx-fly{animation:fly 1.2s forwards}.fx-zap{animation:zap .8s}
+@keyframes jump{40%{transform:translateY(-70%) scale(1.15)}}
+@keyframes spin{to{transform:translateY(-40%) rotate(720deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-25%) rotate(-12deg)}40%{transform:translateX(25%) rotate(12deg)}60%{transform:translateX(-18%)}80%{transform:translateX(18%)}}
+@keyframes fall{to{transform:translateY(60%) rotate(90deg);opacity:.3}}
+@keyframes fly{to{transform:translate(300%,-300%) rotate(1080deg);opacity:0}}
+@keyframes zap{0%,40%,80%{filter:invert(1) hue-rotate(90deg)}20%,60%,100%{filter:none}}
+@keyframes shakeall{0%,100%{transform:translate(0)}25%{transform:translate(-8px,5px)}50%{transform:translate(8px,-5px)}75%{transform:translate(-5px,-5px)}}
+#boom{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);font-size:clamp(34px,10vw,84px);font-weight:900;color:#ffe600;-webkit-text-stroke:3px #111;text-shadow:5px 5px 0 var(--red);pointer-events:none;white-space:nowrap}
+#boom.go{animation:boom 1.2s ease-out}
+@keyframes boom{0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg)}20%{transform:translate(-50%,-50%) scale(1.3) rotate(6deg)}100%{transform:translate(-50%,-70%) scale(1) rotate(-4deg);opacity:0}}
+#flash{position:absolute;inset:0;pointer-events:none;opacity:0}
+#flash.go{animation:flash .6s}
+@keyframes flash{0%{opacity:.7}100%{opacity:0}}
+#toast{position:absolute;left:8px;top:8px;background:#000c;padding:4px 10px;border-radius:8px;font-size:15px;opacity:0;transition:opacity .3s}
+#toast.go{opacity:1}
+#card{position:absolute;inset:0;background:#000d;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px;gap:8px}
+#card.on{display:flex;animation:pop .35s}
+#card h2{margin:0;font-size:clamp(20px,4.6vw,38px);color:var(--red);text-shadow:3px 3px 0 #fff3}
+#card.win h2{color:#4cff7a}
+#card p{margin:0;font-size:clamp(13px,2.4vw,18px);max-width:90%}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+#text{width:min(96vw,720px);min-height:74px;font-size:clamp(15px,2.6vw,19px);padding:10px 4px;line-height:1.35;cursor:pointer}
+#choices{width:min(96vw,720px);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;font-weight:700;padding:12px 8px;font-size:clamp(13px,2.4vw,17px);border:3px solid #fff;border-radius:10px;background:var(--o);color:#111;cursor:pointer;box-shadow:4px 4px 0 #fff3;transition:transform .12s;animation:pop .3s backwards}
+button:hover{transform:scale(1.04) rotate(-1deg);background:#ffb36b}
+button.hardb{background:var(--red);color:#fff}
+.conf{position:absolute;top:-10%;font-size:24px;animation:drop 2.4s linear forwards;pointer-events:none}
+@keyframes drop{to{transform:translateY(130vh) rotate(720deg)}}
+.torch{animation:flick .3s infinite alternate}
+@keyframes flick{to{opacity:.55;transform:scale(1.2)}}
+.beam{transform-origin:70px 80px;animation:sweep 3.5s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:rotate(-35deg)}to{transform:rotate(35deg)}}
+.heli{animation:heli 6s ease-in-out infinite alternate}
+@keyframes heli{from{transform:translate(0,0)}to{transform:translate(-130px,24px)}}
+.prop{transform-origin:center;animation:spinp .15s linear infinite}
+@keyframes spinp{to{transform:scaleX(-1)}}
+.star{animation:tw 2s infinite alternate}
+@keyframes tw{to{opacity:.2}}
 </style></head><body>
-<h1>JAILBREAK</h1>
-<div id="stage"><div id="me">🧑‍🦱</div><div id="guard">💂</div><div id="bars"></div></div>
-<div id="text"></div><div id="inv"></div><div id="choices"></div>
+<h1>JAILBREAK<small>THE STICKMAN ESCAPE</small></h1>
+<div id="hud"><span id="hl"></span><span id="hr"></span></div>
+<div id="world">
+  <svg id="bg" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice"></svg>
+  <div id="guard" class="pawn walk"><div id="bubble"></div></div>
+  <div id="actor" class="pawn"></div>
+  <div id="flash"></div><div id="boom"></div><div id="toast"></div>
+  <div id="card"></div>
+</div>
+<div id="text"></div>
+<div id="choices"></div>
 <script>
-const G={
-easy:{start:"cell",scenes:{
- cell:{t:"You wake in a cell. Where do you look?",c:[{l:"Under the bed",give:"spoon",next:"dig"},{l:"The wall",fail:"The wall is solid. A guard spots you."}]},
- dig:{t:"You found a spoon! Now what?",c:[{l:"Dig the floor",need:"spoon",give:"keys",next:"exit",msg:"You tunnel out and grab a key ring!"},{l:"Pick the lock",fail:"Bare hands can't pick a lock."}]},
- exit:{t:"Freedom is near. Which way?",c:[{l:"The gate",need:"keys",win:"The key opens the gate. YOU ESCAPED! 🎉"},{l:"The fence",fail:"The fence is electrified!"}]}}},
-hard:{start:"cell",scenes:{
- cell:{t:"Hard mode. The guard patrols fast. Search the cell:",c:[{l:"Under the bed",give:"spoon",next:"hall"},{l:"The toilet",give:"wire",next:"hall"},{l:"The pillow",give:"note",next:"hall",msg:"Just a love letter. Useless."},{l:"Scream for help",fail:"The guard hears you. Solitary!"}]},
- hall:{t:"You need to get out of the cell.",c:[{l:"Dig the floor",need:"spoon",next:"tunnel",msg:"Slow digging... but it works."},{l:"Pick the lock",need:"wire",next:"tunnel",msg:"Click! The lock opens onto a dark service corridor."},{l:"Bribe the guard",need:"note",fail:"He's not impressed by love letters."},{l:"Run the door",fail:"Locked. You bonk your head."}]},
- tunnel:{t:"In the tunnel: a fork in the dark.",c:[{l:"Left: laundry",give:"uniform",next:"yard"},{l:"Right: sewer",fail:"It floods. You turn back caught."},{l:"Straight: guard room",give:"keys",next:"yard",msg:"You swipe keys while he naps!"},{l:"Wait",fail:"The tunnel collapses!"}]},
- yard:{t:"The yard! Floodlights sweep. Choose carefully.",c:[{l:"Sneak in uniform",need:"uniform",next:"gate",msg:"The guards nod at you."},{l:"Use the keys",need:"keys",next:"gate"},{l:"Climb the wall",fail:"Searchlight! Caught."},{l:"Sprint",fail:"Too slow. Caught."}]},
- gate:{t:"The final gate. A getaway car waits.",c:[{l:"Walk out",need:"uniform",win:"You stroll out in disguise. YOU ESCAPED! 🎉"},{l:"Unlock the gate",need:"keys",win:"Keys turn. YOU ESCAPED! 🚗💨"},{l:"Jump the fence",fail:"Electrified!"},{l:"Hide in a truck",fail:"Dogs find you."}]}}}};
-const $=id=>document.getElementById(id);
-let mode,inv,pos;
-function say(s){const t=$("text");t.textContent=s;t.style.animation="none";t.offsetHeight;t.style.animation="";}
-function btn(label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;$("choices").appendChild(b);}
-function anim(c){const m=$("me");m.className="";m.offsetHeight;m.className=c;}
-function menu(){inv=[];pos=10;$("me").style.left="10px";$("stage").className="";$("inv").textContent="";
- $("choices").innerHTML="";say("Choose your difficulty:");btn("Easy",()=>start("easy"));btn("Hard 😈",()=>start("hard"));}
-function start(m){mode=m;inv=[];pos=10;$("guard").className=m=="hard"?"hard":"";show(G[m].start);}
-function show(id){const s=G[mode].scenes[id];say(s.t);$("inv").textContent=inv.length?"Items: "+inv.join(", "):"";
- $("choices").innerHTML="";s.c.forEach(c=>btn(c.l,()=>pick(c)));}
-function end(msg,won){$("choices").innerHTML="";say(msg);btn("Play again",menu);}
+const $=s=>document.querySelector(s);
+const ICON={spoon:"🥄",paperclip:"📎",uniform:"👮",keys:"🔑"};
+function stick(col,cap){return `<svg viewBox="0 0 60 100"><g class="body-idle">
+<g class="limb armL" stroke="${col}" stroke-width="6"><line x1="30" y1="36" x2="12" y2="58"/></g>
+<g class="limb armR" stroke="${col}" stroke-width="6"><line x1="30" y1="36" x2="48" y2="58"/></g>
+<line x1="30" y1="28" x2="30" y2="62" stroke="${col}" stroke-width="7" stroke-linecap="round"/>
+<g class="limb legL" stroke="#222" stroke-width="6"><line x1="30" y1="62" x2="18" y2="94"/></g>
+<g class="limb legR" stroke="#222" stroke-width="6"><line x1="30" y1="62" x2="42" y2="94"/></g>
+<circle cx="30" cy="16" r="13" fill="#fff" stroke="#111" stroke-width="3"/>
+<circle cx="25" cy="14" r="2" fill="#111"/><circle cx="35" cy="14" r="2" fill="#111"/><path d="M24 21q6 4 12 0" stroke="#111" stroke-width="2" fill="none"/>
+${cap?`<path d="M15 10Q30-8 45 10Z" fill="${col}" stroke="#111" stroke-width="2"/><rect x="13" y="9" width="34" height="4" fill="#111"/>`:`<path d="M17 6l4-7 4 6 5-8 5 8 4-6 4 7z" fill="#111"/>`}
+</g></svg>`}
+$("#guard").insertAdjacentHTML("afterbegin",stick("#3a86ff",true));
+$("#actor").innerHTML=stick("#ff8a1f",false);
+
+const stars=Array.from({length:30},(_,i)=>`<circle class="star" style="animation-delay:${i*.2}s" cx="${(i*97)%600}" cy="${(i*53)%150}" r="1.6" fill="#fff"/>`).join("");
+const BG={
+cell:`<defs><pattern id="br" width="60" height="30" patternUnits="userSpaceOnUse"><rect width="60" height="30" fill="#34344a"/><path d="M0 0H60M0 15H60M30 0V15M0 15V30" stroke="#25253a" stroke-width="2" fill="none"/></pattern></defs>
+<rect width="600" height="300" fill="url(#br)"/><rect y="255" width="600" height="45" fill="#1c1c28"/>
+<rect x="250" y="40" width="90" height="70" fill="#0a1030" stroke="#111" stroke-width="6"/><circle cx="300" cy="72" r="16" fill="#ffe9a0"/><path d="M270 40V110M300 40V110M330 40V110" stroke="#999" stroke-width="5"/>
+<rect x="30" y="215" width="140" height="40" fill="#776"/><rect x="30" y="198" width="46" height="20" rx="9" fill="#eee"/>
+<rect x="420" y="195" width="50" height="60" rx="8" fill="#cde"/><ellipse cx="445" cy="195" rx="28" ry="8" fill="#9ab"/>
+<rect x="515" y="95" width="75" height="160" fill="#4a4a5a" stroke="#222" stroke-width="5"/><circle cx="532" cy="180" r="6" fill="gold"/><path d="M535 120h40" stroke="#222" stroke-width="3"/>`,
+tunnel:`<rect width="600" height="300" fill="#3b2a1a"/><rect y="250" width="600" height="50" fill="#26190d"/>
+${[60,260,460].map((x,i)=>`<path d="M${x} 250V120a50 60 0 0 1 100 0V250Z" fill="#0d0805" stroke="#6b4a2a" stroke-width="5"/><text x="${x+50}" y="105" fill="#fc8" font-size="30" text-anchor="middle">${["🧺","🍩","🧦"][i]}</text>`).join("")}
+${[20,215,415,580].map(x=>`<circle class="torch" cx="${x}" cy="150" r="9" fill="#ffa726"/><rect x="${x-2}" y="158" width="4" height="22" fill="#654"/>`).join("")}`,
+yard:`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050520"/><stop offset="1" stop-color="#1b2a55"/></linearGradient></defs>
+<rect width="600" height="300" fill="url(#sk)"/>${stars}
+<rect x="0" y="90" width="600" height="22" fill="#555"/><rect y="255" width="600" height="45" fill="#2d3b22"/>
+<g class="beam"><polygon points="70,80 -40,300 190,300" fill="#fff8b0" opacity=".28"/></g>
+<rect x="55" y="70" width="30" height="190" fill="#444"/><rect x="40" y="55" width="60" height="25" fill="#222"/>
+<rect x="500" y="70" width="30" height="190" fill="#444"/><rect x="485" y="55" width="60" height="25" fill="#222"/>
+<text x="300" y="75" font-size="22" text-anchor="middle" fill="#bbb">⚠ 30 FT WALL ⚠</text>`,
+gate:`<defs><linearGradient id="dw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a5a"/><stop offset="1" stop-color="#ffe6a0"/></linearGradient></defs>
+<rect width="600" height="300" fill="url(#dw)"/><circle cx="470" cy="150" r="46" fill="#fff4b8"/><rect y="255" width="600" height="45" fill="#5b8a3a"/>
+<g stroke="#222" stroke-width="6">${Array.from({length:9},(_,i)=>`<line x1="${80+i*28}" y1="90" x2="${80+i*28}" y2="255"/>`).join("")}<line x1="70" y1="120" x2="320" y2="120"/></g>
+<text x="195" y="75" font-size="22" text-anchor="middle" fill="#222" font-weight="bold">PRISON EXIT</text>
+<g transform="translate(370,205)"><rect width="140" height="38" rx="10" fill="#e11"/><rect x="28" y="-20" width="72" height="26" rx="8" fill="#e11"/><rect x="40" y="-14" width="48" height="16" fill="#9df"/><circle cx="30" cy="40" r="14" fill="#222"/><circle cx="110" cy="40" r="14" fill="#222"/><text x="70" y="26" font-size="12" fill="#fff" text-anchor="middle">GETAWAY</text></g>
+<path d="M0 255h600" stroke="#222" stroke-width="4"/><text x="560" y="232" font-size="34">⚡</text>`,
+roof:`<rect width="600" height="300" fill="#07071c"/>${stars}
+${Array.from({length:12},(_,i)=>`<rect x="${i*52}" y="${150+(i*37)%60}" width="40" height="150" fill="#14143a"/>`).join("")}
+<rect y="250" width="600" height="50" fill="#444"/><rect y="245" width="600" height="8" fill="#777"/>
+<g class="heli"><g transform="translate(420,40)"><ellipse cx="40" cy="25" rx="40" ry="18" fill="#222"/><line x1="40" y1="5" x2="40" y2="-2" stroke="#999" stroke-width="4"/><rect class="prop" x="-5" y="-6" width="90" height="5" fill="#bbb"/><path d="M78 20h45" stroke="#222" stroke-width="5"/><text x="30" y="30" font-size="14" fill="#fc0">NEWS?</text></g></g>`
+};
+
+const SCENES={
+cell:{bg:"cell",x:12,guard:false,t:"Day 1 at Pointy Tower Prison. You're in for stealing a diamond the size of a toaster. Time to get out of here.",c:[
+ {l:"Search the bed",give:"spoon",msg:"Under the mattress: a spoon. Prison architects, everybody.",next:"hall",fx:"jump"},
+ {l:"Read the graffiti",give:"paperclip",msg:"Behind a terrible poem there's a paperclip. 10/10 poem, 3/10 rhymes.",next:"hall",fx:"jump"},
+ {l:"Flush yourself down the toilet",fail:"Plumbing is not a transport system.",boom:"SPLOOSH!",fx:"fall",title:"Plumbing Incident"},
+ {l:"Wiggle the bars really hard",h:1,fail:"Bars: 1. You: 0. The bars did not even notice.",boom:"CLANG!",fx:"shake",title:"Wiggle Fail"},
+ {l:"Order a pizza",h:1,fail:"The guard ate your pizza. Then arrested you for ordering it.",boom:"NOM NOM!",fx:"shake",title:"Delivery Error"}]},
+hall:{bg:"cell",x:30,guard:true,q:["Zzz...","*sips coffee*","Who's there?"],t:"You've got a tool. Now leave the cell. The guard is dozing near the door... mostly.",c:[
+ {l:"Dig through the floor with the spoon",need:"spoon",needFail:"You have no spoon. You dig with your fingernails. Sad.",msg:"Dig dig dig... three hours later you pop into a tunnel.",next:"tunnel",fx:"fall",boom:"DIG!"},
+ {l:"Pick the lock with the paperclip",need:"paperclip",needFail:"You have no paperclip. You pick the lock with your nose.",msg:"Click! The door swings open onto a dusty service tunnel.",next:"tunnel"},
+ {l:"Politely ask the guard to open up",fail:"He says no. Very politely.",title:"Too Polite",boom:"NOPE!"},
+ {l:"Ram the door",h:1,fail:"The door wins. Again.",boom:"BONK!",fx:"fly",title:"Door: 1, You: 0"},
+ {l:"Disguise yourself as a plant",h:1,fail:"The guard waters you. Then arrests you.",boom:"SPLASH!",title:"Photosynthesis Failure"}]},
+tunnel:{bg:"tunnel",x:40,guard:false,t:"A dark tunnel with three exits. One smells like laundry. One smells like donuts. One smells like feet.",c:[
+ {l:"The laundry room",give:"uniform",msg:"You borrow a guard uniform. It's a little tight.",next:"yard"},
+ {l:"The donut break room",give:"keys",msg:"Keys! Right next to a half-eaten donut. You finish the donut too.",next:"yard"},
+ {l:"The feet one",fail:"A hundred inmates' socks. You faint.",boom:"BLEH!",fx:"fall",title:"Sock Overdose"},
+ {l:"Wait here and think",h:1,fail:"A mole arrives and files a complaint about your noise.",boom:"POP!",title:"Mole Trouble"}]},
+yard:{bg:"yard",x:45,guard:true,q:["Nice night!","Hm? Hm.","*yawns*"],t:"The yard. Searchlights everywhere. The wall is 30 feet tall and the guards are bored.",c:[
+ {l:"Stroll past dressed as a guard",need:"uniform",needFail:"You're still in the orange jumpsuit. The guards notice.",msg:"The guards salute. You salute back. Smooth.",next:"gate",nextH:"roof"},
+ {l:"Open the side door with the keys",need:"keys",needFail:"You have no keys. You jiggle the handle really loudly.",msg:"The side door clicks open. Keys: best invention.",next:"gate",nextH:"roof"},
+ {l:"Climb the wall",fail:"Searchlight! Everything gets very dramatic.",boom:"FLASH!",fx:"fly",title:"Spotlight Moment"},
+ {l:"Sprint in a zigzag",fail:"Zigzagging just makes you easier to laugh at.",boom:"HA HA!",fx:"shake",title:"Zig-Zagged"},
+ {l:"Start a dance party",h:1,fail:"The guards love it. They clap. Then they arrest you.",boom:"DISCO!",fx:"spin",title:"Too Fun"}]},
+gate:{bg:"gate",x:42,guard:false,t:"The final gate! A getaway car with a suspicious driver is waiting. Choose your exit!",c:[
+ {l:"Hop in the getaway car",win:"You hop in. The driver says 'Wheee' and floors it.",ending:"Getaway Driver"},
+ {l:"Unlock the gate with the keys",need:"keys",needFail:"You don't have the keys!",win:"The keys turn. You walk out whistling.",ending:"Key Master"},
+ {l:"Wave bye in your guard uniform",need:"uniform",needFail:"You're not wearing a uniform.",win:"The warden holds the door open for you. What a gentleman.",ending:"Fashionable Escape"},
+ {l:"Climb the electric fence",fail:"Zzzzap! You glow for a week.",boom:"ZAP!",fx:"zap",title:"Shocking"},
+ {l:"Hide in the garbage truck",fail:"It was the compactor.",boom:"CRUNCH!",fx:"fall",title:"Trash Day"}]},
+roof:{bg:"roof",x:30,guard:true,q:["Stop right there!","I saw that!","HEY!"],t:"HARD MODE FINALE. You're on the roof, the guards are close, and a helicopter is circling. Is it yours?",c:[
+ {l:"Flash the keys like a signal mirror",need:"keys",needFail:"You have no keys to flash. You wave your arms. It's the news.",win:"The helicopter lands. It's your cousin Steve! He's a pilot now!",ending:"Cousin Steve"},
+ {l:"Zipline down with your guard belt",need:"uniform",needFail:"You have no guard belt. You zipline with your jumpsuit. It rips.",win:"Zzzzzip! You slide into freedom.",ending:"Zipline Legend"},
+ {l:"Wave at the helicopter",fail:"It's a news helicopter. You're live on TV. Still busted.",boom:"LIVE!",title:"Breaking News"},
+ {l:"Jump off the roof",fail:"Gravity is rude.",boom:"THUD!",fx:"fall",title:"Gravity Check"},
+ {l:"Make a parachute out of laundry",fail:"It was socks. Just socks.",boom:"FWUMP!",fx:"fall",title:"Sock Parachute"}]}
+};
+const TOTAL_ENDINGS=Object.values(SCENES).flatMap(s=>s.c).filter(c=>c.win).length;
+const store={get(){try{return JSON.parse(localStorage.getItem("jb_end")||"[]")}catch(e){return[]}},add(n){try{const a=this.get();if(!a.includes(n)){a.push(n);localStorage.setItem("jb_end",JSON.stringify(a))}}catch(e){}}};
+
+let mode="easy",inv=[],snap=[],lives=3,cur="cell",fails=0,busy=false,typer=null;
+let ac;function beep(seq){try{ac=ac||new AudioContext();let t=ac.currentTime;seq.forEach(([f,d,ty])=>{const o=ac.createOscillator(),g=ac.createGain();o.type=ty||"square";o.frequency.value=f;g.gain.value=.04;o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d);t+=d})}catch(e){}}
+const SFX={ok:[[520,.08],[780,.1]],bad:[[200,.15,"sawtooth"],[120,.3,"sawtooth"]],win:[[523,.12],[659,.12],[784,.12],[1047,.3]]};
+
+function hud(){
+  $("#hl").textContent=mode==="hard"?"😈 HARD  "+"❤️".repeat(Math.max(lives,0)):"🙂 EASY  (infinite retries)";
+  $("#hr").textContent=inv.map(i=>ICON[i]).join(" ")+"   🏆 "+store.get().length+"/"+TOTAL_ENDINGS+"  💀 "+fails;
+}
+function fx(cls){const a=$("#actor");a.className="pawn";void a.offsetWidth;a.classList.add(cls)}
+function boom(w,bad){const b=$("#boom");b.textContent=w;b.className="";void b.offsetWidth;b.className="go";
+  const f=$("#flash");f.style.background=bad?"#f03":"#fff";f.className="";void f.offsetWidth;f.className="go";
+  if(bad){const wd=$("#world");wd.classList.remove("shakeall");void wd.offsetWidth;wd.classList.add("shakeall")}}
+function toast(s){const t=$("#toast");t.textContent=s;t.className="go";setTimeout(()=>t.className="",1800)}
+function say(s,done){clearInterval(typer);const el=$("#text");el.textContent="";let i=0;
+  const fin=()=>{clearInterval(typer);el.textContent=s;el.onclick=null;done&&done()};
+  el.onclick=fin;typer=setInterval(()=>{el.textContent=s.slice(0,++i);if(i>=s.length)fin()},16)}
+function walk(ms){const a=$("#actor");a.classList.add("walk");setTimeout(()=>a.classList.remove("walk"),ms||900)}
+function place(sc){
+  $("#bg").innerHTML=BG[sc.bg];
+  const a=$("#actor");a.className="pawn";a.style.left=sc.x+"%";
+  const g=$("#guard");g.style.display=sc.guard?"block":"none";g.className="pawn walk"+(mode==="hard"?" hard":"");
+  if(sc.guard){$("#bubble").textContent=sc.q[Math.floor(Math.random()*sc.q.length)]}
+}
+function choices(list){
+  const box=$("#choices");box.innerHTML="";
+  list.forEach((c,i)=>{const b=document.createElement("button");b.textContent=c.l;b.style.animationDelay=i*.07+"s";if(c.h)b.classList.add("hardb");b.onclick=()=>pick(c);box.appendChild(b)});
+}
+function show(id){
+  cur=id;snap=inv.slice();const sc=SCENES[id];place(sc);hud();$("#choices").innerHTML="";busy=false;
+  let list=sc.c.filter(c=>mode==="hard"||!c.h);
+  if(mode==="hard")list=list.slice().sort(()=>Math.random()-.5);
+  say(sc.t,()=>choices(list));
+}
+function card(cls,h,p,btns){
+  const c=$("#card");c.className="on "+cls;c.innerHTML=`<h2>${h}</h2><p>${p}</p><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"></div>`;
+  btns.forEach(([l,fn])=>{const b=document.createElement("button");b.textContent=l;b.onclick=()=>{c.className="";fn()};c.lastChild.appendChild(b)});
+}
 function pick(c){
- if(c.need&&!inv.includes(c.need)){return lose(c.fail||"You lack the right item.");}
- if(c.fail&&!c.need){return lose(c.fail);}
- if(c.give&&!inv.includes(c.give))inv.push(c.give);
- pos=Math.min(pos+90,400);$("me").style.left=pos+"px";anim("jump");
- if(c.win){$("me").style.left="480px";$("stage").classList.add("escaped");return end(c.win,true);}
- if(c.msg)say(c.msg);
- setTimeout(()=>show(c.next),c.msg?1200:300);}
-function lose(m){anim("shake");end("🚨 "+m+" BUSTED!");}
+  if(busy)return;busy=true;$("#choices").innerHTML="";
+  if(c.need&&!inv.includes(c.need))return fail({...c,fail:c.needFail||"You don't have the right item.",title:"Missing Item",boom:"OOPS!"});
+  if(c.fail)return fail(c);
+  beep(SFX.ok);
+  if(c.give&&!inv.includes(c.give)){inv.push(c.give);toast("+ "+ICON[c.give]+" "+c.give)}
+  hud();walk(1000);fx(c.fx||"jump");if(c.boom)boom(c.boom);
+  const a=$("#actor");a.style.left=(parseFloat(a.style.left)+14)+"%";
+  say(c.msg||c.win);
+  if(c.win)return setTimeout(()=>win(c),1800);
+  const nxt=(mode==="hard"&&c.nextH)||c.next;
+  setTimeout(()=>show(nxt),c.msg.length*16+1600);
+}
+function fail(c){
+  fails++;if(mode==="hard")lives--;hud();beep(SFX.bad);
+  fx(c.fx||"shake");boom(c.boom||"BUSTED!",true);say("🚨 "+c.fail);
+  setTimeout(()=>{
+    const head=`FAILURE #${fails}: ${c.title||"Busted"}`;
+    if(mode==="hard"&&lives<=0)card("","GAME OVER",c.fail+"<br>You ran out of lives.",[["Back to menu",menu]]);
+    else card("",head,c.fail,[["Retry from checkpoint",()=>{inv=snap.slice();show(cur)}]]);
+  },1700);
+}
+function win(c){
+  beep(SFX.win);fx("spin");boom("ESCAPED!");
+  store.add(c.ending);hud();
+  for(let i=0;i<40;i++){const e=document.createElement("div");e.className="conf";e.textContent=["🎉","⭐","💎","🎊"][i%4];e.style.left=Math.random()*100+"%";e.style.animationDelay=Math.random()*1.5+"s";$("#world").appendChild(e);setTimeout(()=>e.remove(),4500)}
+  setTimeout(()=>card("win","YOU ESCAPED! 🎉",`Ending unlocked: <b>${c.ending}</b><br>Endings found: ${store.get().length}/${TOTAL_ENDINGS}. Try another path!`,[["Play again",menu]]),1200);
+}
+function menu(){
+  mode="easy";inv=[];lives=3;fails=0;busy=false;snap=[];cur="cell";
+  const sc=SCENES.cell;place(sc);$("#guard").style.display="none";$("#actor").style.left="45%";$("#actor").classList.add("walk");hud();
+  $("#choices").innerHTML="";
+  say("Pick your difficulty. Easy: 3 choices, unlimited retries. Hard: more traps, 3 lives, a faster guard and an extra finale!",()=>{
+    const box=$("#choices");box.innerHTML="";
+    [["🙂 Easy",()=>start("easy"),0],["😈 Hard",()=>start("hard"),1]].forEach(([l,fn,h])=>{const b=document.createElement("button");b.textContent=l;if(h)b.classList.add("hardb");b.onclick=fn;box.appendChild(b)});
+  });
+}
+function start(m){mode=m;inv=[];lives=3;fails=0;show("cell")}
 menu();
 </script></body></html>

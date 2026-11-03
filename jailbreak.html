@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jailbreak</title>
+<style>
+  body{margin:0;background:#111;color:#eee;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  h1{margin:16px 0 4px;letter-spacing:4px}
+  #stage{position:relative;width:min(92vw,560px);height:150px;margin:8px 0;border:3px solid #444;border-radius:8px;overflow:hidden;
+    background:repeating-linear-gradient(90deg,#222 0 18px,#333 18px 22px)}
+  #stage.escaped{background:linear-gradient(#58c,#8d6)}
+  #guard{position:absolute;bottom:10px;font-size:40px;animation:patrol 4s linear infinite alternate}
+  #guard.hard{animation-duration:1.8s}
+  #me{position:absolute;bottom:10px;left:10px;font-size:48px;transition:left .8s ease}
+  #me.shake{animation:shake .5s}
+  #me.jump{animation:jump .6s}
+  #bars{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 40px,#777 40px 46px);opacity:.6;transition:opacity .8s}
+  #stage.escaped #bars{opacity:0}
+  @keyframes patrol{from{left:55%}to{left:85%}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px) rotate(-10deg)}40%{transform:translateX(14px) rotate(10deg)}60%{transform:translateX(-10px)}80%{transform:translateX(10px)}}
+  @keyframes jump{50%{transform:translateY(-50px) scale(1.2)}}
+  #text{width:min(92vw,560px);min-height:70px;font-size:18px;animation:fade .5s}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+  #choices,#modes{display:flex;flex-wrap:wrap;gap:10px;width:min(92vw,560px)}
+  button{flex:1 1 45%;padding:12px;font-size:16px;border:0;border-radius:6px;background:#e94;color:#111;cursor:pointer;transition:transform .15s}
+  button:hover{transform:scale(1.05)}
+  #inv{margin:10px;color:#9cf;min-height:24px}
+</style></head><body>
+<h1>JAILBREAK</h1>
+<div id="stage"><div id="me">🧑‍🦱</div><div id="guard">💂</div><div id="bars"></div></div>
+<div id="text"></div><div id="inv"></div><div id="choices"></div>
+<script>
+const G={
+easy:{start:"cell",scenes:{
+ cell:{t:"You wake in a cell. Where do you look?",c:[{l:"Under the bed",give:"spoon",next:"dig"},{l:"The wall",fail:"The wall is solid. A guard spots you."}]},
+ dig:{t:"You found a spoon! Now what?",c:[{l:"Dig the floor",need:"spoon",give:"keys",next:"exit",msg:"You tunnel out and grab a key ring!"},{l:"Pick the lock",fail:"Bare hands can't pick a lock."}]},
+ exit:{t:"Freedom is near. Which way?",c:[{l:"The gate",need:"keys",win:"The key opens the gate. YOU ESCAPED! 🎉"},{l:"The fence",fail:"The fence is electrified!"}]}}},
+hard:{start:"cell",scenes:{
+ cell:{t:"Hard mode. The guard patrols fast. Search the cell:",c:[{l:"Under the bed",give:"spoon",next:"hall"},{l:"The toilet",give:"wire",next:"hall"},{l:"The pillow",give:"note",next:"hall",msg:"Just a love letter. Useless."},{l:"Scream for help",fail:"The guard hears you. Solitary!"}]},
+ hall:{t:"You need to get out of the cell.",c:[{l:"Dig the floor",need:"spoon",next:"tunnel",msg:"Slow digging... but it works."},{l:"Pick the lock",need:"wire",next:"yard",msg:"Click! The lock opens."},{l:"Bribe the guard",need:"note",fail:"He's not impressed by love letters."},{l:"Run the door",fail:"Locked. You bonk your head."}]},
+ tunnel:{t:"In the tunnel: a fork in the dark.",c:[{l:"Left: laundry",give:"uniform",next:"yard"},{l:"Right: sewer",fail:"It floods. You turn back caught."},{l:"Straight: guard room",give:"keys",next:"yard",msg:"You swipe keys while he naps!"},{l:"Wait",fail:"The tunnel collapses!"}]},
+ yard:{t:"The yard! Floodlights sweep. Choose carefully.",c:[{l:"Sneak in uniform",need:"uniform",next:"gate",msg:"The guards nod at you."},{l:"Use the keys",need:"keys",next:"gate"},{l:"Climb the wall",fail:"Searchlight! Caught."},{l:"Sprint",fail:"Too slow. Caught."}]},
+ gate:{t:"The final gate. A getaway car waits.",c:[{l:"Walk out",need:"uniform",win:"You stroll out in disguise. YOU ESCAPED! 🎉"},{l:"Unlock the gate",need:"keys",win:"Keys turn. YOU ESCAPED! 🚗💨"},{l:"Jump the fence",fail:"Electrified!"},{l:"Hide in a truck",fail:"Dogs find you."}]}}}};
+const $=id=>document.getElementById(id);
+let mode,inv,pos;
+function say(s){const t=$("text");t.textContent=s;t.style.animation="none";t.offsetHeight;t.style.animation="";}
+function btn(label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;$("choices").appendChild(b);}
+function anim(c){const m=$("me");m.className="";m.offsetHeight;m.className=c;}
+function menu(){inv=[];pos=10;$("me").style.left="10px";$("stage").className="";$("inv").textContent="";
+ $("choices").innerHTML="";say("Choose your difficulty:");btn("Easy",()=>start("easy"));btn("Hard 😈",()=>start("hard"));}
+function start(m){mode=m;inv=[];pos=10;$("guard").className=m=="hard"?"hard":"";show(G[m].start);}
+function show(id){const s=G[mode].scenes[id];say(s.t);$("inv").textContent=inv.length?"Items: "+inv.join(", "):"";
+ $("choices").innerHTML="";s.c.forEach(c=>btn(c.l,()=>pick(c)));}
+function end(msg,won){$("choices").innerHTML="";say(msg);btn("Play again",menu);}
+function pick(c){
+ if(c.need&&!inv.includes(c.need)){return lose(c.fail||"You lack the right item.");}
+ if(c.fail&&!c.need){return lose(c.fail);}
+ if(c.give&&!inv.includes(c.give))inv.push(c.give);
+ pos=Math.min(pos+90,400);$("me").style.left=pos+"px";anim("jump");
+ if(c.win){$("me").style.left="480px";$("stage").classList.add("escaped");return end(c.win,true);}
+ if(c.msg)say(c.msg);
+ setTimeout(()=>show(c.next),c.msg?1200:300);}
+function lose(m){anim("shake");end("🚨 "+m+" BUSTED!");}
+menu();
+</script></body></html>
